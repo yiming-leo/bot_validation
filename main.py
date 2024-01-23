@@ -1,3 +1,7 @@
+import math
+import random
+import pyautogui
+
 import cv2
 import numpy as np
 from selenium import webdriver
@@ -27,7 +31,7 @@ class CrackGeetest:
         print(f"url访问成功")
 
         tel_input = self.browser.find_element(By.XPATH, '//*[@placeholder="请输入手机号"]')
-        tel_input.send_keys("13111111111")
+        tel_input.send_keys("13111111112")
 
         send_code = self.browser.find_element(By.XPATH, '//*[@class="sendCode"]')
         send_code.click()
@@ -52,9 +56,9 @@ class CrackGeetest:
             print(f"element错误")
             self.crack()
 
-        # TODO 定位到class="geetest_canvas_slice geetest_absolute"，然后获取滑块图片
-        # TODO 定位到class="geetest_canvas_fullbg geetest_fade geetest_absolute"，设置style="opacity: 1;"，然后获取原始背景图片
-        # TODO 定位到class="geetest_canvas_bg geetest_absolute"，然后获取缺口背景图片
+        # 定位到class="geetest_canvas_slice geetest_absolute"，然后获取滑块图片
+        # 定位到class="geetest_canvas_fullbg geetest_fade geetest_absolute"，设置style="opacity: 1;"，然后获取原始背景图片
+        # 定位到class="geetest_canvas_bg geetest_absolute"，然后获取缺口背景图片
 
     def login(self):
         print(f"getting in login")
@@ -63,21 +67,20 @@ class CrackGeetest:
         slider_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_slice geetest_absolute"]')
         slider_element.screenshot('slider.png')
         self.browser.execute_script("""
-        var element = arguments[0];
-        element.parentNode.removeChild(element);
+            var element = arguments[0];
+            element.style.opacity = '0';
         """, slider_element)
         print("==>1: remove slider_element")
-        time.sleep(5)
+        # time.sleep(3)
         # ------------------删除缺口图片
         gap_img_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_bg geetest_absolute"]')
         gap_img = gap_img_element.screenshot('gap.png')
         self.browser.execute_script("""
-        var element = arguments[0];
-        element.parentNode.removeChild(element);
+            var element = arguments[0];
+            element.style.opacity = '0';
         """, gap_img_element)
         print("==>2: remove gap_img_element")
-        time.sleep(5)
-        # ------------------获取完整图片
+        # time.sleep(3)
         # ------------------修改 canvas 元素的 style 属性
         result = self.browser.execute_script("""
         var canvasElement = document.querySelector('.geetest_canvas_fullbg.geetest_fade.geetest_absolute');
@@ -89,7 +92,7 @@ class CrackGeetest:
         }
         """)
         print("==>3: modify style: display->X")
-        time.sleep(5)
+        # time.sleep(3)
         full_img = (
             self.browser.find_element(By.XPATH, '//*[@class="geetest_canvas_fullbg geetest_fade geetest_absolute"]')
             .screenshot('full.png'))
@@ -104,39 +107,22 @@ class CrackGeetest:
                 }
                 """)
         print("==>3: add style: display->none")
-        time.sleep(20)
+        # time.sleep(3)
         # -----------------TODO 把他们删除的的都加回来
-        # ------------------添加滑块和缺口图片
+        # 将滑块图片的透明度设置为不透明（1）
         self.browser.execute_script("""
-        var canvasElement = document.createElement("canvas");
-        canvasElement.className = "geetest_canvas_slice geetest_absolute";
-        canvasElement.height = "160";
-        canvasElement.width = "260";
-        canvasElement.style = "opacity: 1; display: block"
-
-        var targetDiv = document.querySelector('.geetest_slicebg.geetest_absolute');
-        if (targetDiv) {
-            targetDiv.appendChild(canvasElement);
-        }
-        """)
+            var element = arguments[0];
+            element.style.opacity = '1';
+        """, slider_element)
         print("==>2: create element: slide_png")
-        time.sleep(20)
-
+        # time.sleep(3)
+        # 将滑块图片的透明度设置为不透明（1）
         self.browser.execute_script("""
-        var canvasElement = document.createElement("canvas");
-        canvasElement.className = "geetest_canvas_bg geetest_absolute";
-        canvasElement.height = "160";
-        canvasElement.width = "260";
-
-        var targetDiv = document.querySelector('.geetest_slicebg.geetest_absolute');
-        if (targetDiv) {
-            targetDiv.appendChild(canvasElement);
-        }
-        """)
+                    var element = arguments[0];
+                    element.style.opacity = '1';
+                """, gap_img_element)
         print("==>1: create element: gap_png")
-        time.sleep(5)
-
-        time.sleep(10)
+        # time.sleep(3)
         # -----------------执行滑块操作
         print(f"slider_element: {slider_element}")
         # -------传统像素检测-----------
@@ -144,28 +130,94 @@ class CrackGeetest:
         image_b = Image.open('gap.png').convert('RGB')  # 打开有缺口的图片
         gap_pos = self.get_gap(image_a, image_b, 60)
         print(f"gap_pos: {gap_pos}")
+        gap_pos -= 5
+
+        # if gap_pos < 120:
+        #     self.browser.find_element("//div[@class='geetest_refresh_1']").click()
+        #     self.login()
 
         # ----------通用模块-------------
 
         slider_btn = self.browser.find_element(By.XPATH, '//*[@class="geetest_slider_button"]')
         # 5.开始滑动！
+        # res = self.perform_slide(slider_btn, gap_pos)
+        # print(res)
+        time.sleep(5)
         action = webdriver.ActionChains(self.browser)  # 启动Selenium的动作链
+        action.move_to_element(slider_btn)  # 将鼠标移动到元素上
         action.click_and_hold(slider_btn).perform()  # 按住滑动按钮不松开
-
-        # 模拟人类手动滑动，逐渐增加速度
-        # distance = gap_pos  # 你的滑动距离
-        # speed = 10  # 初始速度
-        # acceleration = 1.3  # 加速度
-        #
-        # for i in range(1, distance + 1):
-        #     action.move_by_offset(speed, 0).perform()
-        #     speed += acceleration
-
-        action.move_by_offset(gap_pos - 10, 0)  # 开始滑动！
+        pyautogui.moveRel(-gap_pos, 0, duration=1)
+        # self.find_element_by_image()
 
         action.release().perform()  # 释放滑块
-        time.sleep(5)
+        time.sleep(9999)
         print(f"结束")
+
+    def find_element_by_image(self, image_path):
+        location = pyautogui.locateCenterOnScreen(image_path)
+        return location
+
+    def perform_slide(self, slider_btn, gap_pos):
+        # 创建 ActionChains 对象
+        action = webdriver.ActionChains(self.browser)
+
+        # 按住滑块按钮
+        action.click_and_hold(slider_btn)
+
+        # 定义移动轨迹的参数
+        total_distance = gap_pos  # 总距离
+        acceleration = 0.1  # 加速度
+        shake_intensity = 5  # 抖动强度
+
+        # 计算移动轨迹
+        current_distance = 0  # 当前已移动的距离
+        current_speed = 1  # 初始速度为1
+        for step in range(total_distance):
+            progress = step / total_distance
+
+            # 随机加速度变化
+            current_acceleration = acceleration * (1 - progress) + random.uniform(-0.05, 0.05)
+
+            # 抖动，引入随机抖动
+            shake = shake_intensity * math.sin(2 * math.pi * progress) + random.uniform(-1, 1)
+
+            # 计算当前速度
+            current_speed += current_acceleration + shake
+
+            # 移动到当前位置
+            action.move_by_offset(current_speed, 0)
+
+            # 为了更好地观察效果，可以适度增加等待时间
+            time.sleep(0.05)
+
+        # 释放滑块按钮
+        action.release()
+
+        # 执行动作链
+        action.perform()
+
+        # 等待一段时间以便查看结果
+        time.sleep(0.7)
+        print("移动结束")
+        return True
+
+    def get_track(self, distance):
+        track = []  # 移动轨迹
+        current = 0  # 当前位移
+        mid = distance * 4 / 5  # 减速阈值
+        t = 0.2  # 计算间隔
+        v = 0  # 初速度
+        while current < distance:
+            if current < mid:
+                a = 2  # 加速度为正2
+            else:
+                a = -3  # 加速度为负3
+            v0 = v  # 初速度v0
+            v = v0 + a * t  # 当前速度v = v0 + at
+            move = v0 * t + 1 / 2 * a * t * t  # 移动距离x = v0t + 1/2 * a * t^2
+            current += move  # 当前位移
+            track.append(round(move))  # 加入轨迹
+        return track
 
     def pillow_detect(self, slider_element):
         slider_element.click()  # 先模拟点击下，方便下面获取到有缺口的图片
@@ -235,3 +287,4 @@ class CrackGeetest:
 if __name__ == '__main__':
     crack = CrackGeetest()
     crack.crack()
+# geetest_panel_error_content
