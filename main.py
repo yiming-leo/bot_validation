@@ -1,154 +1,54 @@
-import time
-
-from PIL import Image
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
-
-
-class CrackGeetest:
-
-    def __init__(self):
-        self.browser = webdriver.Chrome()
-        self.url = "https://passport.haodf.com/nusercenter/showlogin"
-
-    def crack(self):
-        self.browser.get(self.url)  # 访问网址
-        time.sleep(2)
-        print(f"url访问成功")
-        tel_input = self.browser.find_element(By.XPATH, '//*[@placeholder="请输入手机号"]')
-        tel_input.send_keys("13111111112")
-        send_code = self.browser.find_element(By.XPATH, '//*[@class="sendCode"]')
-        send_code.click()
-        print(f"请求验证成功")
-        element = WebDriverWait(self.browser, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//div[@class='geetest_panel geetest_wind']"))
-        )
-        time.sleep(3)
-        print(f"element: {element}")
-        style_attribute = element.get_attribute("style")
-        print(f"style_attribute: {style_attribute}")
-        if "display: block; opacity: 1;" in style_attribute:
-            print("Style attribute matches the expected value!")
-            self.login()
-        else:
-            print(f"element错误")
-            self.crack()
-
-    def login(self):
-        print(f"getting in login")
-        # 3.获取图片（层级：滑块>缺口背景>满背景）
-        # ------------------删除滑块图片------------------
-        slider_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_slice geetest_absolute"]')
-        slider_element.screenshot('slider.png')
-        self.browser.execute_script("""
-            var element = arguments[0];
-            element.style.opacity = '0';
-        """, slider_element)
-        print("==>1: remove slider_element")
-        time.sleep(0.5)
-        # ------------------删除缺口图片------------------
-        gap_img_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_bg geetest_absolute"]')
-        gap_img_element.screenshot('gap.png')
-        self.browser.execute_script("""
-            var element = arguments[0];
-            element.style.opacity = '0';
-        """, gap_img_element)
-        print("==>2: remove gap_img_element")
-        time.sleep(0.5)
-        # ------------------修改 canvas 元素的 style 属性------------------
-        self.browser.execute_script("""
-        var canvasElement = document.querySelector('.geetest_canvas_fullbg.geetest_fade.geetest_absolute');
-        if (canvasElement) {
-            canvasElement.setAttribute('style', 'opacity: 1;');
-            return 'set success';
-        }else {
-            return 'style element_not_found';
-        }
-        """)
-        print("==>3: modify style: display->X")
-        time.sleep(0.5)
-        (self.browser.find_element(By.XPATH, '//*[@class="geetest_canvas_fullbg geetest_fade geetest_absolute"]')
-         .screenshot('full.png'))
-        # ------------------修改 canvas 元素的 style 属性------------------
-        self.browser.execute_script("""
-                var canvasElement = document.querySelector('.geetest_canvas_fullbg.geetest_fade.geetest_absolute');
-                if (canvasElement) {
-                    canvasElement.setAttribute('style', 'display: none; opacity: 1;');
-                    return 'set success';
-                }else {
-                    return 'style element_not_found';
-                }
-                """)
-        print("==>3: add style: display->none")
-        time.sleep(0.5)
-        # -----------------把他们删除的的都加回来------------------
-        # 将滑块图片的透明度设置为不透明（1）
-        self.browser.execute_script("""
-            var element = arguments[0];
-            element.style.opacity = '1';
-        """, slider_element)
-        print("==>2: create element: slide_png")
-        time.sleep(0.5)
-        # ------------------将滑块图片的透明度设置为不透明（1）------------------
-        self.browser.execute_script("""
-                    var element = arguments[0];
-                    element.style.opacity = '1';
-                """, gap_img_element)
-        print("==>1: create element: gap_png")
-        time.sleep(0.5)
-        # -----------------执行滑块操作------------------
-        print(f"slider_element: {slider_element}")
-        # -------传统像素检测-----------
-        image_a = Image.open('full.png').convert('RGB')  # 打开原始图片
-        image_b = Image.open('gap.png').convert('RGB')  # 打开有缺口的图片
-        gap_pos = self.get_gap(image_a, image_b, 60)
-        print(f"gap_pos: {gap_pos}")
-        gap_pos -= 5
-        # ----------通用模块-------------
-        slider_btn = self.browser.find_element(By.XPATH, '//*[@class="geetest_slider_button"]')
-        time.sleep(3)
-        action = webdriver.ActionChains(self.browser)  # 启动Selenium的动作链
-        action.move_to_element(slider_btn)  # 将鼠标移动到元素上
-        action.click_and_hold(slider_btn)  # 按住滑动按钮不松开
-        action.pause(0.2)
-        action.move_by_offset(gap_pos - 10, 0)
-        action.pause(0.6)
-        action.move_by_offset(10, 0)
-        action.pause(0.6)
-        action.release().perform()  # 释放滑块
-        # ---------检测是否通过验证，如果没通过，那就使用验证码刷新按钮，重新获取图片重新点按钮----------
-        time.sleep(2)
-        val_element = self.browser.find_element(By.XPATH, '//*[@class="geetest_panel geetest_wind"]')
-        style_value = val_element.get_attribute("style")  # 获取元素的 style 属性值
-        if "display: block; opacity: 1;" in style_value:
-            val_refresh_btn = self.browser.find_element(By.XPATH, "//a[@class='geetest_refresh_1']")
-            val_refresh_btn.click()
-            self.login()
-        print(f"结束")
-
-    def is_pixel_equal(self, image1, image2, x, y, threshold):
-        # 取两个图片的像素点
-        pixel1 = image1.load()[x, y]
-        pixel2 = image2.load()[x, y]
-        threshold = threshold
-        if abs(pixel1[0] - pixel2[0]) < threshold and abs(pixel1[1] - pixel2[1]) < threshold and abs(
-                pixel1[2] - pixel2[2]) < threshold:
-            return True
-        else:
-            return False
-
-    def get_gap(self, image1, image2, threshold):
-        left = 60
-        for i in range(left, image1.size[0]):
-            for j in range(image1.size[1]):
-                if not self.is_pixel_equal(image1, image2, i, j, threshold):
-                    left = i
-                    return left
-        return left
+from SqlParse import SqlParse
+from TelMsgRcv import TelMsgRcv
+from bot_validation import CrackGeetest
 
 
 if __name__ == '__main__':
-    crack = CrackGeetest()
+    register_url = "https://passport.haodf.com/nusercenter/registerbymobile"
+    fake_password = "Ingru2023"
+    msg_username = "leoanother"
+    msg_password = "anotherqq"
+
+    mysql_host = '192.168.1.204'
+    mysql_port = 3308
+    mysql_user = 'root'
+    mysql_password = '123456'
+    mysql_database = 'haodf'
+
+    # 创建通用实例给不同文件调用
+    sql_parse_instance = SqlParse(mysql_host, mysql_port, mysql_user, mysql_password, mysql_database)
+
+    # -----------0-1. 在接码平台获取新号------------
+    tel_msg_rcv = TelMsgRcv()
+    temp_token = tel_msg_rcv.sing_in(msg_username, msg_password)
+    left_amount = tel_msg_rcv.left_amount(temp_token)
+    fake_phone = tel_msg_rcv.get_phone(temp_token)
+    # msg_ver_code_text = tel_msg_rcv.get_msg(temp_token, fake_phone)  # 谨慎开启！！！
+
+    # -----------1-2. 去mysql里查询是否已有此新号------------
+
+    # -----------2-3. 去haodf找回密码网站看看账号是否被注册过------------
+
+    # -----------3-6. 去haodf用户注册网站注册-----------
+    crack = CrackGeetest(fake_phone, fake_password, register_url, temp_token)
     crack.crack()
+
+    # 0：（可以使用）未被别人注册，已被我们注册
+    # 1：（账号被封了）因为前面太SB， haodf超用了
+    # 2：（别人注册了）已被别人注册，我们无法注册
+    # -1：（无法注册）无法接收到短信
+    # -2：（特殊无法注册）未被别人注册，我们也无法注册啊这个手机有问题
+
+    # 0. 在接码平台获取新号
+    # 1. 去mysql里查询是否已有此新号，
+    #   - 0 如果有，那就重新回到0
+    # 2. 去haodf找回密码网站看看账号是否被注册过，https://passport.haodf.com/nusercenter/help/resetpassword
+    #   - 0 如果跳出来“图片验证框”或2个<p class="password-text">，内容有“已向您的手机发送了一条验证短信”，说明已被注册，那就数据库里记录此手机和状态2，然后重新回到0
+    #   - 3 如果有弹窗<div id="js-bubble" role="alert" style="display: inline-block; opacity: 0;">存在几秒，之后inline-block又变回none，那就说明没被注册
+    # ---------------至此已确认现在拿到的手机号没被注册（同时也筛掉了被封禁的手机）-----------------
+    # 3. 去haodf用户注册网站注册，填入手机号，https://passport.haodf.com/nusercenter/registerbymobile
+    # 4. 点击获取验证码，跳出校验框进行校验，调用自动校验通过图片校验，通过之后验证码会发送
+    # 5. 在30s内，去接码平台得到短信
+    #   - 0 如果得不到短信，那就获取新号，数据库里记录此手机和状态-1
+    #   - 6 如果得到了短信，那就提取短信验证码内容，填充到元素上，数据库里记录此手机和状态0
+    # 6. 设置密码，检查阅读协议是否点击（没点就点），然后点击注册按钮，停留10秒，数据库里记录此手机和状态0
