@@ -84,17 +84,20 @@ class CrackGeetest:
     def login(self):
         time.sleep(0.5)
         self.check_if_duplicate_user_use()  # 检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬，那就--放弃--吧！
-        time.sleep(20)  # 等待短信发送20s
+        time.sleep(15)  # 等待短信发送15s
         self.check_if_duplicate_user_use()  # 再再检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬，那就--放弃--吧！
         rcv_msg = self.inject_val_msg(1)  # 提取短信
         self.input_val_msg(rcv_msg)  # 输入短信验证码
         self.check_if_msg_wrong()  # 点击查看验证码是否错误，错误就--放弃--吧！
         self.input_password(self.fake_password)  # 没有错误就点击设置密码
         self.click_submit()  # 点击提交注册
-        time.sleep(10)
+        time.sleep(15)
         self.modify_save_phone()  # 保存手机号和手机状态到mysql
-        time.sleep(20)
-        print(f"===>>结束<<===")
+        time.sleep(5)
+        print(f">>===>>结束<<===<<")
+        self.browser.close()
+        self.browser.quit()
+        raise SystemExit(0)
 
     # -------------------------------------------组件-----------------------------------
     # 监测一下是否撞上了别人也在注册的号（这里有4种奇怪的问题：1. 别人在注册撞号了， 2. 手机验证码不正确， 3.数据错误请重试， 4. 请求过多重发验证码）
@@ -142,7 +145,7 @@ class CrackGeetest:
         print(f"msg_ver_code_text: {msg_ver_code_text}")
         # 提取验证消息内容，拿到验证码
         match_un_rcv = re.search(r'尚未收到', msg_ver_code_text)
-        if match_un_rcv and retry_times < 3:  # 最高执行5次
+        if match_un_rcv and retry_times < 4:  # 最高执行5次
             print("没收到验证码短信，请继续等待")
             retry_times += 1
             time.sleep(6)
@@ -150,8 +153,11 @@ class CrackGeetest:
         elif not match_un_rcv:
             print("收到了验证码短信，请进一步处理")
             match_ver_code = re.search(r'\b\d{6}\b', msg_ver_code_text)
+            # match_ver_code = re.findall(r'(?<!\d)\d{6}(?!\d)', msg_ver_code_text)
+            print(f"match_ver_code: {match_ver_code}")
             if match_ver_code:
                 verification_code = match_ver_code.group()
+                # verification_code = match_ver_code
                 print("提取到的验证码:", verification_code)
                 return verification_code
             else:

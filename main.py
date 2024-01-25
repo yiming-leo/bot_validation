@@ -29,7 +29,7 @@ if __name__ == '__main__':
             left_amount = tel_msg_rcv.left_amount(temp_token)
             print(f"left_amount: {left_amount}")
             if float(left_amount) <= 0.99:
-                raise SystemExit("Left amount is below or equal to 0.35. Stopping the system.")
+                raise SystemExit(f"钱包没钱了，要充钱。当前金额：{left_amount}")
             # -----------1-2. 去mysql里查询是否已有此新号------------
             is_already_in_db = sql_parse_instance.query_fake_phone_exist(fake_phone)
             print(f"is_already_in_db: {is_already_in_db}")
