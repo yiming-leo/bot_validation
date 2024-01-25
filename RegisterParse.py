@@ -152,12 +152,13 @@ class CrackGeetest:
             return self.inject_val_msg(retry_times)  # 回调
         elif not match_un_rcv:
             print("收到了验证码短信，请进一步处理")
-            match_ver_code = re.search(r'\b\d{6}\b', msg_ver_code_text)
+            # match_ver_code = re.search(r'\b\d{6}\b', msg_ver_code_text)
             # match_ver_code = re.findall(r'(?<!\d)\d{6}(?!\d)', msg_ver_code_text)
+            match_ver_code = re.findall(r'(?<!\d)\d{6}(?!\d)', msg_ver_code_text)
             print(f"match_ver_code: {match_ver_code}")
             if match_ver_code:
-                verification_code = match_ver_code.group()
-                # verification_code = match_ver_code
+                # verification_code = match_ver_code.group()
+                verification_code = match_ver_code[0]
                 print("提取到的验证码:", verification_code)
                 return verification_code
             else:
