@@ -1,3 +1,5 @@
+import re
+
 import requests
 import urllib.parse
 
@@ -75,12 +77,13 @@ class TelMsgRcv:
 
     # ------------------4. 获取短信（收费0.35一次，中文关键字需要先转unicode编码）------------------
     def get_msg(self, token, phone_number, keyword="好大夫在线"):
+        keyword_unicode = keyword
         # 确保已登录并获取到 token
         if not token:
             print("Please sign in first.")
             return None
         # 转换中文关键字为 Unicode 编码
-        keyword_unicode = urllib.parse.quote(keyword)
+        print(f"keyword_unicode: {keyword_unicode}")
         # 构建请求参数
         params = {
             "code": "getMsg",
@@ -92,6 +95,10 @@ class TelMsgRcv:
         print(f"===get_phone===")
         if response.status_code == 200:
             print(f"Message VerCode Text: {response.text}")
+            have_error_text = re.search(r'ERROR', response.text)
+            if have_error_text:
+                print(f"请求失败！ {response.text}")
+                return None
             return response.text
         else:
             print(f"Request failed. Status code: {response.status_code}")
