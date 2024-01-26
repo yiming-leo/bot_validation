@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime
 
 from SqlParse import SqlParse
 from TelMsgRcv import TelMsgRcv
@@ -7,7 +8,8 @@ from RegisterParse import CrackGeetest
 from DetectIsRegistered import CrackRegistered
 
 if __name__ == '__main__':
-    os.makedirs('img', exist_ok=True)  # 看看Img目录是否正常
+    os.makedirs('img', exist_ok=True)  # 看看img目录是否正常
+    os.makedirs('log', exist_ok=True)  # 看看log目录是否正常
     register_url = "https://passport.haodf.com/nusercenter/registerbymobile"
     reset_pwd_url = "https://passport.haodf.com/nusercenter/help/resetpassword"
     fake_password = "Ingru2023"
@@ -27,9 +29,9 @@ if __name__ == '__main__':
     tel_msg_rcv = TelMsgRcv()
     temp_token = tel_msg_rcv.sing_in(msg_username, msg_password)
 
-    while True:
-        while True:
-            while True:
+    while True:  # 爬取失败的重试
+        while True:  # haodf账号被注册的重试
+            while True:  # mysql号码存在的重试
                 # -----------0-1. 在接码平台获取新号------------
                 fake_phone = tel_msg_rcv.get_phone(temp_token)
                 print(f"当前虚拟号码：{fake_phone}")
@@ -48,17 +50,18 @@ if __name__ == '__main__':
             is_can_be_used = crack_registered_instance.detect_is_registered()
             print(f"is_can_be_used: {is_can_be_used}")
             if is_can_be_used:
-                print(f"终于找到一个可用的手机了: {fake_phone}")
+                print(f"终于找到一个可用的手机了: {fake_phone} 时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
                 sql_parse_instance.save_fake_phone_to_mysql(fake_phone, fake_password, 5)
                 break
             else:
-                print(f"mysql已存在账号: {fake_phone}")
+                print(f"mysql已存在账号: {fake_phone} 时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
                 sql_parse_instance.save_fake_phone_to_mysql(fake_phone, fake_password, 2)
         # -----------3-6. 去haodf用户注册网站注册-----------
         crack_geetest_instance = CrackGeetest(fake_phone, fake_password, register_url, temp_token, sql_parse_instance,
                                               selenium_remote_driver_url)
         crack_result = crack_geetest_instance.crack()
         if crack_result:  # 如果正常执行，那就结束；不正常？那就重来一遍
+            print(f"当前时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} ")
             raise SystemExit(0)
 
     # 0：（可以使用）未被别人注册，已被我们注册

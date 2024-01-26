@@ -3,7 +3,6 @@ import time
 
 from PIL import Image
 from selenium import webdriver
-from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -105,13 +104,13 @@ class CrackGeetest:
         time.sleep(5)
         try:
             self.click_submit()  # 如果没有跳转，需要再次点击提交注册
-        except Exception as e:
-            print(f"没有'注册'按钮，说明已经注册了: {e}")
+        except Exception:
+            print(f"没有'注册'按钮，说明已经注册了")
             print(f">>====!!!正在修改MySQL状态，请勿关闭爬虫!!!====<<")
         time.sleep(15)
         self.modify_save_phone()  # 保存手机号和手机状态到mysql
         time.sleep(10)
-        print(f">>====执行完成，SQL同步结束====<<")
+        print(f">>====执行完成，SQL同步结束>>====")
         self.browser.close()
         self.browser.quit()
         return True
