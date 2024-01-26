@@ -50,7 +50,11 @@ class CrackGeetest:
             self.parse_img_val()
         else:
             print(f"element错误，无需执行验证拼图操作")
-        self.login()
+        login_result = self.login()
+        if login_result:
+            return True
+        elif not login_result:
+            return False
 
     # ==============图像验证处理程序==============
     def parse_img_val(self):
@@ -83,12 +87,18 @@ class CrackGeetest:
     # ==============末尾登录程序==============
     def login(self):
         time.sleep(0.5)
-        self.check_if_duplicate_user_use()  # 检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬，那就--放弃--吧！
+        if self.check_if_duplicate_user_use():  # 检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬，那就--放弃--吧！
+            return False  # ------------->>执行结果<<-------------
         time.sleep(15)  # 等待短信发送15s
-        self.check_if_duplicate_user_use()  # 再再检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬，那就--放弃--吧！
+        if self.check_if_duplicate_user_use():  # 再再检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬，那就--放弃--吧！
+            return False  # ------------->>执行结果<<-------------
         rcv_msg = self.inject_val_msg(1)  # 提取短信
+        if not rcv_msg:
+            return False  # ------------->>执行结果<<-------------
         self.input_val_msg(rcv_msg)  # 输入短信验证码
-        self.check_if_msg_wrong()  # 点击查看验证码是否错误，错误就--放弃--吧！
+        check_result = self.check_if_msg_wrong()  # 点击查看验证码是否错误，错误就--放弃--吧！
+        if check_result:
+            return False  # ------------->>执行结果<<-------------
         self.input_password(self.fake_password)  # 没有错误就点击设置密码
         self.click_submit()  # 点击提交注册
         print(f">>====!!!正在验证注册状态，请勿关闭爬虫!!!====<<")
@@ -104,7 +114,7 @@ class CrackGeetest:
         print(f">>====执行完成，SQL同步结束====<<")
         self.browser.close()
         self.browser.quit()
-        raise SystemExit(0)
+        return True
 
     # -------------------------------------------组件-----------------------------------
     # 监测一下是否撞上了别人也在注册的号（这里有4种奇怪的问题：1. 别人在注册撞号了， 2. 手机验证码不正确， 3.数据错误请重试， 4. 请求过多重发验证码）
@@ -125,7 +135,8 @@ class CrackGeetest:
             self.sql_parse_instance.modify_mysql_status_code(self.fake_phone, 4)
             self.browser.close()
             self.browser.quit()
-            raise SystemExit(-1)
+            return False
+            # raise SystemExit(-1)
 
     # 检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬
     def check_if_duplicate_user_use(self):
@@ -141,7 +152,8 @@ class CrackGeetest:
             self.sql_parse_instance.modify_mysql_status_code(self.fake_phone, 4)
             self.browser.close()
             self.browser.quit()
-            raise SystemExit(-1)
+            return False
+            # raise SystemExit(-1)
 
     # 保存手机号、密码、手机状态码到mysql
     def modify_save_phone(self):
@@ -180,7 +192,8 @@ class CrackGeetest:
             print(f"此手机无法收到验证码，系统将其录入数据库(code: 3)，请放弃使用: {self.fake_phone}")
             self.browser.close()
             self.browser.quit()
-            raise SystemExit(-1)
+            return False
+            # raise SystemExit(-1)
 
     # 点击输入短信
     def input_val_msg(self, verification_code):

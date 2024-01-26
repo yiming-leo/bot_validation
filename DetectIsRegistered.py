@@ -33,4 +33,5 @@ class CrackRegistered:
         except NoSuchElementException:
             print("元素已找到，电话注册过，不可用，请重新生成")
             self.browser.close()
+            self.browser.quit()
             return False
