@@ -14,8 +14,13 @@ from TelMsgRcv import TelMsgRcv
 # ----------3.去haodf用户注册网站注册---------------
 class CrackGeetest:
 
-    def __init__(self, fake_phone, fake_password, register_url, temp_token, sql_parse_instance):
-        self.browser = webdriver.Chrome()
+    def __init__(self, fake_phone, fake_password, register_url, temp_token, sql_parse_instance,
+                 selenium_remote_driver_url):
+        # self.browser = webdriver.Chrome()
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('remote')
+        self.browser = webdriver.Remote(command_executor=selenium_remote_driver_url, options=chrome_options)
+
         self.url = register_url
         self.fake_password = fake_password
         self.fake_phone = fake_phone
@@ -53,26 +58,21 @@ class CrackGeetest:
         # ---------------------------4.获取图片（层级：滑块>缺口背景>满背景）-------------------------------
         # 删除滑块图片
         slider_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_slice geetest_absolute"]')
-        slider_element.screenshot('slider.png')
         gap_img_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_bg geetest_absolute"]')
-        gap_img_element.screenshot('gap.png')
-        self.set_slider_opacity_0(slider_element)
-        # 删除缺口图片
-        self.set_gapbg_opacity_0(gap_img_element)
-        # 修改 canvas 元素的 style 属性
-        self.set_fullbg_opacity_1()
-        # 拍张full bg照片
+        self.set_gapbg_opacity_0(gap_img_element)  # 设置 缺口背景 不可见 -> 当前：√滑块 X缺口 X满
+        slider_element.screenshot('./img/slider.png')
+        self.set_slider_opacity_0(slider_element)  # 设置 滑块 不可见 -> 当前：X滑块 X缺口 X满
+        self.set_fullbg_opacity_1()  # 设置 满背景 可见 -> 当前：X滑块 X缺口 √满
         (self.browser.find_element(By.XPATH, '//*[@class="geetest_canvas_fullbg geetest_fade geetest_absolute"]')
-         .screenshot('full.png'))
-        # 修改 canvas 元素的 style 属性
-        self.set_fullbg_display_none()
-        # 把他们删除的的都加回来
-        self.add_slide_png(slider_element)
-        self.add_gap_png(gap_img_element)
+         .screenshot('./img/full.png'))
+        self.set_fullbg_display_none()  # 设置 满背景 不可见 -> 当前：X滑块 X缺口 X满
+        self.add_gap_png(gap_img_element)  # 设置 缺口背景 可见 -> 当前：X滑块 √缺口 X满
+        gap_img_element.screenshot('./img/gap.png')
+        self.add_slide_png(slider_element)  # 设置 滑块 可见 -> 当前：√滑块 √缺口 X满
         # 执行滑块操作
         print(f"slider_element: {slider_element}")
         # 传统像素检测
-        gap_pos = self.detect_diff_img()
+        gap_pos = self.detect_diff_img('img/full.png', 'img/gap.png')
         gap_pos -= 5
         # ----------------------------------拖动按钮拼合验证---------------------------------
         slider_btn = self.browser.find_element(By.XPATH, '//*[@class="geetest_slider_button"]')
@@ -91,10 +91,17 @@ class CrackGeetest:
         self.check_if_msg_wrong()  # 点击查看验证码是否错误，错误就--放弃--吧！
         self.input_password(self.fake_password)  # 没有错误就点击设置密码
         self.click_submit()  # 点击提交注册
+        print(f">>====!!!正在验证注册状态，请勿关闭爬虫!!!====<<")
+        time.sleep(5)
+        try:
+            self.click_submit()  # 如果没有跳转，需要再次点击提交注册
+        except Exception as e:
+            print(f"没有'注册'按钮，说明已经注册了: {e}")
+            print(f">>====!!!正在修改MySQL状态，请勿关闭爬虫!!!====<<")
         time.sleep(15)
         self.modify_save_phone()  # 保存手机号和手机状态到mysql
-        time.sleep(5)
-        print(f">>===>>结束<<===<<")
+        time.sleep(10)
+        print(f">>====执行完成，SQL同步结束====<<")
         self.browser.close()
         self.browser.quit()
         raise SystemExit(0)
@@ -116,6 +123,8 @@ class CrackGeetest:
             text_attribute_value = duplicate_msg_bar.text
             print(f"有问题，放弃吧。系统将其录入数据库(code: 4): {self.fake_phone}: {text_attribute_value}")
             self.sql_parse_instance.modify_mysql_status_code(self.fake_phone, 4)
+            self.browser.close()
+            self.browser.quit()
             raise SystemExit(-1)
 
     # 检测一下是否发送用户重复检测，如果重复了，那么说明有人也在爬
@@ -130,6 +139,8 @@ class CrackGeetest:
             # 说明有人在爬，放弃此号吧！
             print(f"撞号了，放弃吧。系统将其录入数据库(code: 4): {self.fake_phone}")
             self.sql_parse_instance.modify_mysql_status_code(self.fake_phone, 4)
+            self.browser.close()
+            self.browser.quit()
             raise SystemExit(-1)
 
     # 保存手机号、密码、手机状态码到mysql
@@ -167,6 +178,8 @@ class CrackGeetest:
         elif retry_times > 1:
             self.sql_parse_instance.modify_mysql_status_code(self.fake_phone, 3)
             print(f"此手机无法收到验证码，系统将其录入数据库(code: 3)，请放弃使用: {self.fake_phone}")
+            self.browser.close()
+            self.browser.quit()
             raise SystemExit(-1)
 
     # 点击输入短信
@@ -233,9 +246,9 @@ class CrackGeetest:
         time.sleep(0.5)
 
     # 传统图片像素检测
-    def detect_diff_img(self):
-        image_a = Image.open('full.png').convert('RGB')  # 打开原始图片
-        image_b = Image.open('gap.png').convert('RGB')  # 打开有缺口的图片
+    def detect_diff_img(self, full_img_url, gap_img_url):
+        image_a = Image.open(full_img_url).convert('RGB')  # 打开原始图片
+        image_b = Image.open(gap_img_url).convert('RGB')  # 打开有缺口的图片
         gap_pos = self.get_gap(image_a, image_b, 60)
         print(f"gap_pos: {gap_pos}")
         return gap_pos

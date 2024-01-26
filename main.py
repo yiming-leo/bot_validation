@@ -1,3 +1,5 @@
+import time
+
 from SqlParse import SqlParse
 from TelMsgRcv import TelMsgRcv
 from RegisterParse import CrackGeetest
@@ -16,6 +18,8 @@ if __name__ == '__main__':
     mysql_password = '123456'
     mysql_database = 'db_haodf'
 
+    selenium_remote_driver_url = 'http://192.168.2.15:4444'
+
     # 创建通用实例给不同文件调用
     sql_parse_instance = SqlParse(mysql_host, mysql_port, mysql_user, mysql_password, mysql_database)
     tel_msg_rcv = TelMsgRcv()
@@ -25,18 +29,19 @@ if __name__ == '__main__':
         while True:
             # -----------0-1. 在接码平台获取新号------------
             fake_phone = tel_msg_rcv.get_phone(temp_token)
-            print(f"fake_phone: {fake_phone}")
+            print(f"当前虚拟号码：{fake_phone}")
             left_amount = tel_msg_rcv.left_amount(temp_token)
-            print(f"left_amount: {left_amount}")
+            print(f"钱包里还有￥{left_amount}元钱")
             if float(left_amount) <= 0.99:
                 raise SystemExit(f"钱包没钱了，要充钱。当前金额：{left_amount}")
             # -----------1-2. 去mysql里查询是否已有此新号------------
             is_already_in_db = sql_parse_instance.query_fake_phone_exist(fake_phone)
-            print(f"is_already_in_db: {is_already_in_db}")
+            print(f"{fake_phone}已经存在数据库了吗: {is_already_in_db}")
+            time.sleep(5)  # 防止过度查询被封号
             if not is_already_in_db:
                 break  # 到0-1去重新得到一个新的手机号，这里需要无限迭代，直到得到一个新号为止
         # -----------2-3. 去haodf找回密码网站看看账号是否被注册过------------
-        crack_registered_instance = CrackRegistered(fake_phone, reset_pwd_url)
+        crack_registered_instance = CrackRegistered(fake_phone, reset_pwd_url, selenium_remote_driver_url)
         is_can_be_used = crack_registered_instance.detect_is_registered()
         print(f"is_can_be_used: {is_can_be_used}")
         if is_can_be_used:
@@ -47,7 +52,7 @@ if __name__ == '__main__':
             print(f"mysql已存在账号: {fake_phone}")
             sql_parse_instance.save_fake_phone_to_mysql(fake_phone, fake_password, 2)
     # -----------3-6. 去haodf用户注册网站注册-----------
-    crack_geetest_instance = CrackGeetest(fake_phone, fake_password, register_url, temp_token, sql_parse_instance)
+    crack_geetest_instance = CrackGeetest(fake_phone, fake_password, register_url, temp_token, sql_parse_instance, selenium_remote_driver_url)
     crack_geetest_instance.crack()
 
     # 0：（可以使用）未被别人注册，已被我们注册

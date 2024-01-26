@@ -7,8 +7,12 @@ from selenium.webdriver.common.by import By
 
 class CrackRegistered:
 
-    def __init__(self, fake_phone, reset_password_url):
-        self.browser = webdriver.Chrome()
+    def __init__(self, fake_phone, reset_password_url, selenium_remote_driver_url):
+        # self.browser = webdriver.Chrome()
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('remote')
+        self.browser = webdriver.Remote(command_executor=selenium_remote_driver_url, options=chrome_options)
+
         self.url = reset_password_url
         self.fake_phone = fake_phone
 
@@ -28,4 +32,5 @@ class CrackRegistered:
             return True
         except NoSuchElementException:
             print("元素已找到，电话注册过，不可用，请重新生成")
+            self.browser.close()
             return False

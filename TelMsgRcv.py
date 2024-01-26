@@ -24,7 +24,7 @@ class TelMsgRcv:
             "password": password
         }
         response = requests.get(self.base_url, params=params)
-        print(f"===sing_in===")
+        print(f">>===>>^^^sing_in^^^<<===<<")
         if response.status_code == 200:
             print(f"Token: {response.text}")
             return response.text
@@ -44,7 +44,7 @@ class TelMsgRcv:
             "token": token
         }
         response = requests.get(self.base_url, params=params)
-        print(f"===left_amount===")
+        print(f">>===>>$$$left_amount$$$<<===<<")
         if response.status_code == 200:
             print(f"Left Amount: {response.text}")
             return response.text
@@ -67,7 +67,7 @@ class TelMsgRcv:
             "cardType": card_type
         }
         response = requests.get(self.base_url, params=params)
-        print(f"===get_phone===")
+        print(f">>===>>###get_phone###<<===<<")
         if response.status_code == 200:
             print(f"Phone Number: {response.text}")
             return response.text
@@ -92,7 +92,7 @@ class TelMsgRcv:
             "keyWord": keyword_unicode
         }
         response = requests.get(self.base_url, params=params)
-        print(f"===get_phone===")
+        print(f">>===>>@@@get_msg@@@<<===<<")
         if response.status_code == 200:
             print(f"Message VerCode Text: {response.text}")
             have_error_text = re.search(r'ERROR', response.text)
