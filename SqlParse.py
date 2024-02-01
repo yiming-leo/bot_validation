@@ -44,3 +44,13 @@ class SqlParse:
             print(f"数据修改成功==>{fake_phone}, {status_code}")
         except Exception as e:
             print(f"Exception Occurred: {e}")
+
+    def get_fake_phone_from_mysql_status(self, block_values):
+        try:
+            modify_query = "SELECT phone FROM disease_user WHERE block=%s ORDER BY RAND() LIMIT 1"
+            self.mysql_cursor.execute(modify_query, (block_values,))
+            # self.connection.commit()
+            result = self.mysql_cursor.fetchone()
+            return result[0] if result else None
+        except Exception as e:
+            print(f"Exception Occurred: {e}")
