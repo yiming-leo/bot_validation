@@ -113,19 +113,19 @@ class ResetPassword:
         slider_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_slice geetest_absolute"]')
         gap_img_element = self.browser.find_element(By.XPATH, '//canvas[@class="geetest_canvas_bg geetest_absolute"]')
         self.set_gapbg_opacity_0(gap_img_element)  # 设置 缺口背景 不可见 -> 当前：√滑块 X缺口 X满
-        slider_element.screenshot('./img/slider.png')
+        slider_element.screenshot('./reset_pwd_module/img/slider.png')
         self.set_slider_opacity_0(slider_element)  # 设置 滑块 不可见 -> 当前：X滑块 X缺口 X满
         self.set_fullbg_opacity_1()  # 设置 满背景 可见 -> 当前：X滑块 X缺口 √满
         (self.browser.find_element(By.XPATH, '//*[@class="geetest_canvas_fullbg geetest_fade geetest_absolute"]')
-         .screenshot('./img/full.png'))
+         .screenshot('./reset_pwd_module/img/full.png'))
         self.set_fullbg_display_none()  # 设置 满背景 不可见 -> 当前：X滑块 X缺口 X满
         self.add_gap_png(gap_img_element)  # 设置 缺口背景 可见 -> 当前：X滑块 √缺口 X满
-        gap_img_element.screenshot('./img/gap.png')
+        gap_img_element.screenshot('./reset_pwd_module/img/gap.png')
         self.add_slide_png(slider_element)  # 设置 滑块 可见 -> 当前：√滑块 √缺口 X满
         # 执行滑块操作
         print(f"slider_element: {slider_element}")
         # 传统像素检测
-        gap_pos = self.detect_diff_img('img/full.png', 'img/gap.png')
+        gap_pos = self.detect_diff_img('./reset_pwd_module/img/full.png', './reset_pwd_module/img/gap.png')
         gap_pos -= 5
         # ----------------------------------拖动按钮拼合验证---------------------------------
         slider_btn = self.browser.find_element(By.XPATH, '//*[@class="geetest_slider_button"]')

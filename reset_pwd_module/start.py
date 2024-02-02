@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 
@@ -21,13 +22,16 @@ success_reg_count = 0
 
 selenium_remote_driver_url = 'http://192.168.2.15:4444'
 
+os.makedirs('./reset_pwd_module/img', exist_ok=True)  # 看看img目录是否正常
+os.makedirs('./reset_pwd_module/log', exist_ok=True)  # 看看log目录是否正常
+
 # 创建通用实例给不同文件调用
 sql_parse_instance = SqlParse(mysql_host, mysql_port, mysql_user, mysql_password, mysql_database)
 tel_msg_rcv = TelMsgRcv()
 temp_token = tel_msg_rcv.sing_in(msg_username, msg_password)
 
 # -----------1-2. 去mysql里查询是否已有此新号------------
-while success_reg_count < 2:  #
+while success_reg_count < 100:  #
     time.sleep(5)  # 防止过度查询被封号
     left_amount = tel_msg_rcv.left_amount(temp_token)
     fake_phone = None
