@@ -45,6 +45,15 @@ class SqlParse:
         except Exception as e:
             print(f"Exception Occurred: {e}")
 
+    def modify_mysql_status_code_register_date_block_date(self, fake_phone, status_code, register_date, block_date):
+        try:
+            modify_query = "UPDATE disease_user SET block=%s, register_date=%s, block_date=%s WHERE phone=%s"
+            self.mysql_cursor.execute(modify_query, (status_code, register_date, block_date, fake_phone))
+            self.connection.commit()
+            print(f"数据修改成功==>{fake_phone}, {status_code}, {register_date}, {block_date}")
+        except Exception as e:
+            print(f"Exception Occurred: {e}")
+
     def get_fake_phone_from_mysql_status(self, block_values):
         try:
             modify_query = "SELECT phone FROM disease_user WHERE block=%s ORDER BY RAND() LIMIT 1"

@@ -15,9 +15,9 @@ class ResetPassword:
     def __init__(self, fake_phone, fake_password, reset_password_url, temp_token, sql_parse_instance,
                  selenium_remote_driver_url):
         chrome_options = webdriver.ChromeOptions()
-        # chrome_options.add_argument('remote')
-        # self.browser = webdriver.Remote(command_executor=selenium_remote_driver_url, options=chrome_options)
-        self.browser = webdriver.Chrome()
+        chrome_options.add_argument('remote')
+        self.browser = webdriver.Remote(command_executor=selenium_remote_driver_url, options=chrome_options)
+        # self.browser = webdriver.Chrome()
 
         self.tel_msg_rcv = TelMsgRcv()
 
@@ -64,27 +64,30 @@ class ResetPassword:
         # next_step_btn.click()
         time.sleep(5)
         # -------------------现在到了repeat密码的地方----------------------
-        script1 = f'document.querySelector(\'input[placeholder="输入新密码"]\').value = "{self.fake_password}";'
-        self.browser.execute_script(script1)
-        print(f"第一次: {script1}")
-        # input_frame_1 = self.browser.find_element('//input[@placeholder="输入新密码"]')
-        # input_frame_1.send_keys(self.fake_password)
-        time.sleep(5)
-        script2 = f'document.querySelector(\'input[placeholder="再次输入新密码"]\').value = "{self.fake_password}";'
-        self.browser.execute_script(script2)
-        print(f"第二次: {script2}")
-        time.sleep(5)
-        # input_frame_2 = self.browser.find_element('//input[@placeholder="再次输入新密码"]')
-        # input_frame_2.send_keys(self.fake_password)
+        try:
+            # script1 = f'document.querySelector(\'input[placeholder="输入新密码"]\').value="1";'
+            # self.browser.execute_script(script1)
+            script1 = self.browser.find_element(By.XPATH, '//input[@placeholder="输入新密码"]')
+            script1.send_keys(self.fake_password)
+            print(f"第一次: {script1}")
+            time.sleep(2)
+
+            # script2 = f'document.querySelector(\'input[placeholder="再次输入新密码"]\').value="{self.fake_password}";'
+            # self.browser.execute_script(script2)
+            script2 = self.browser.find_element(By.XPATH, '//input[@placeholder="再次输入新密码"]')
+            script2.send_keys(self.fake_password)
+            print(f"第二次: {script2}")
+            time.sleep(2)
+
+        except Exception as e:
+            print(f"不对劲: {e}")
+            time.sleep(50)
 
         self.click_submit()
-        time.sleep(1)
-        try_result = self.try_reset_pwd_again(0)
-        time.sleep(50)
-        if try_result:
-            return True
-        else:
-            return False
+        time.sleep(5)
+        self.browser.close()
+        self.browser.quit()
+        return self.try_reset_pwd_again(0)
 
     def try_reset_pwd_again(self, try_numbers):
         if try_numbers > 5:
@@ -99,13 +102,13 @@ class ResetPassword:
         except Exception:
             print(f"没有'注册'按钮，说明已经注册了")
             print(f">>====!!!正在修改MySQL状态，请勿关闭爬虫!!!====<<")
+            return True
 
     # 点击注册
     def click_submit(self):
         button_selector = ".button"  # 请根据实际情况提供正确的选择器
         script_btn = f'document.querySelector("{button_selector}").click();'
         self.browser.execute_script(script_btn)
-        self.browser.find_element(By.XPATH, "//div[@class='button']")  # TODO 这里要捕获到新密码太弱的框框，如果出现，就重新输密码
         print(f"点击重置密码按钮")
 
     # ==============图像验证处理程序==============
