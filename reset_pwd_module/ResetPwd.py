@@ -56,11 +56,9 @@ class ResetPassword:
         self.input_val_msg(rcv_msg)  # 输入短信验证码
         # ------------------点击下一步，看看验证码是否正确-------------------------
         time.sleep(2)
-        # next_step_btn = self.browser.find_element('//div[@class="content js-send-ver-code"]/div[@class="button"]')
         button_selector = ".button"  # 请根据实际情况提供正确的选择器
         script_clk = f'document.querySelector("{button_selector}").click();'
         self.browser.execute_script(script_clk)
-        # next_step_btn.click()
         time.sleep(5)
         # -------------------现在到了repeat密码的地方----------------------
         try:

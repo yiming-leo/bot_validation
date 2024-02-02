@@ -31,7 +31,7 @@ tel_msg_rcv = TelMsgRcv()
 temp_token = tel_msg_rcv.sing_in(msg_username, msg_password)
 
 # -----------1-2. 去mysql里查询是否已有此新号------------
-while success_reg_count < 100:  #
+while success_reg_count < 100:
     time.sleep(5)  # 防止过度查询被封号
     left_amount = tel_msg_rcv.left_amount(temp_token)
     fake_phone = None
