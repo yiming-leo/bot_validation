@@ -63,3 +63,13 @@ class SqlParse:
             return result[0] if result else None
         except Exception as e:
             print(f"Exception Occurred: {e}")
+            raise SystemExit(f"数据库里没有2状态的了")
+
+    def delete_block_3456(self):
+        try:
+            modify_query = "DELETE FROM disease_user WHERE block IN (3, 4, 5, 6)"
+            self.mysql_cursor.execute(modify_query, ())
+            self.connection.commit()
+            print(f"数据修改成功，影响行数==>{self.mysql_cursor.rowcount}")
+        except Exception as e:
+            print(f"Exception Occurred: {e}")

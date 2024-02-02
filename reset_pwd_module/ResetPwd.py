@@ -3,7 +3,6 @@ import time
 
 from PIL import Image
 from selenium import webdriver
-from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -65,15 +64,10 @@ class ResetPassword:
         time.sleep(5)
         # -------------------现在到了repeat密码的地方----------------------
         try:
-            # script1 = f'document.querySelector(\'input[placeholder="输入新密码"]\').value="1";'
-            # self.browser.execute_script(script1)
             script1 = self.browser.find_element(By.XPATH, '//input[@placeholder="输入新密码"]')
             script1.send_keys(self.fake_password)
             print(f"第一次: {script1}")
             time.sleep(2)
-
-            # script2 = f'document.querySelector(\'input[placeholder="再次输入新密码"]\').value="{self.fake_password}";'
-            # self.browser.execute_script(script2)
             script2 = self.browser.find_element(By.XPATH, '//input[@placeholder="再次输入新密码"]')
             script2.send_keys(self.fake_password)
             print(f"第二次: {script2}")
